@@ -47,8 +47,8 @@ namespace HabitTracker
                 Console.WriteLine("Habit Tracker");
                 Console.WriteLine("1. Add water intake");
                 Console.WriteLine("2. View water intake");
-                Console.WriteLine("3. Delete water intake");
-                Console.WriteLine("4. Update water intake");
+                Console.WriteLine("3. Update water intake");
+                Console.WriteLine("4. Delete water intake");
                 Console.WriteLine("5. Exit");
                 Console.Write("Select an option: ");
                 string userInput = Console.ReadLine();
@@ -62,10 +62,10 @@ namespace HabitTracker
                         ViewWaterIntake();
                         break;
                     case "3":
-                        DeleteRecord();
+                        UpdateRecord();
                         break;
                     case "4":
-                        UpdateRecord();
+                        DeleteRecord();
                         break;
                     case "5":
                         closeApp = true;
@@ -79,7 +79,67 @@ namespace HabitTracker
 
         private static void UpdateRecord()
         {
-            throw new NotImplementedException();
+            Console.Clear();
+            GetRecords();
+
+            Console.Write("Enter the Id of the record you want to delete, or type 0 to return to the menu: ");
+
+            string idInput = Console.ReadLine();
+
+            using (var connection = new SqliteConnection(connectionsString))
+            {
+                connection.Open();
+                var tableCmd = connection.CreateCommand();
+                tableCmd.CommandText = $"SELECT * FROM drinking_water WHERE Id = {idInput}";
+
+                List<DrinkingWater> tableData = new();
+
+                SqliteDataReader reader = tableCmd.ExecuteReader();
+
+                if (reader.HasRows)
+                {
+
+                    Console.WriteLine("Please enter a new record to replace the old one:");
+
+                    string date = GetDateInput();
+
+                    string quantity = GetQuantityInput();
+
+                    if (quantity == "0")
+                    {
+                        Console.WriteLine("quantity cannot be 0");
+                    }
+                    else
+                    {
+                        var updateCmd = connection.CreateCommand();
+
+                        updateCmd.CommandText = $"UPDATE drinking_water SET date = '{date}', quantity = '{quantity}' WHERE Id = {idInput}";
+
+                        if (updateCmd.ExecuteNonQuery() > 0)
+                        {
+                            Console.WriteLine("Record upddated successfully.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Failed to add record. Please try again.");
+                        }
+                    }
+
+                }
+                else
+                {
+                    Console.WriteLine("No record found with the given Id.");
+
+                }
+
+                connection.Close();
+
+            }
+
+            Console.WriteLine("Press any key to return to the menu...");
+            Console.ReadKey();
+
+            GetUserInput();
         }
 
         private static void DeleteRecord()
@@ -90,12 +150,6 @@ namespace HabitTracker
             Console.Write("Enter the Id of the record you want to delete, or type 0 to return to the menu: ");
 
             string idInput = Console.ReadLine();
-
-            if (idInput == "0")
-            {
-                GetUserInput();
-                return;
-            }
 
             using (var connection = new SqliteConnection(connectionsString))
             {
@@ -154,7 +208,7 @@ namespace HabitTracker
 
                 foreach (var record in tableData)
                 {
-                    Console.WriteLine($"Id: {record.Id} | Date: {record.Date.ToString("dd-MM-yyyy")} | Quantity: {record.Quantity}ml");
+                    Console.WriteLine($"Id: {record.Id} | Date: {record.Date.ToString("dd-MM-yyyy")} | Quantity: {record.Quantity} cups");
                 }
 
             }
@@ -163,6 +217,8 @@ namespace HabitTracker
         private static void ViewWaterIntake()
         {
             Console.Clear();
+
+            Console.WriteLine("Water Intake Records:");
 
             GetRecords();
 
@@ -225,9 +281,13 @@ namespace HabitTracker
             Console.Write("Enter the date (dd-mm-yyyy), type 0 to return to the menu: ");
 
             string dateInput = Console.ReadLine();
+            bool parsedDate = DateTime.TryParseExact(dateInput, "dd-MM-yyyy", new CultureInfo("en-US"), DateTimeStyles.None, out DateTime dateValue);
 
-            if (dateInput == "0")
+            if (!parsedDate)
             {
+                Console.WriteLine("Invalid date format. Please use dd-mm-yyyy format.");
+                Console.WriteLine("Press any key to return to the menu...");
+                Console.ReadKey();
                 GetUserInput();
             }
 
