@@ -72,6 +72,7 @@ namespace HabitTracker
                         break;
                     default:
                         Console.WriteLine("Invalid option. Please try again.");
+                        Console.ReadKey();
                         break;
                 }
             }
@@ -85,6 +86,9 @@ namespace HabitTracker
             Console.Write("Enter the Id of the record you want to delete, or type 0 to return to the menu: ");
 
             string idInput = Console.ReadLine();
+            
+            if (idInput == "0") return;
+
 
             using (var connection = new SqliteConnection(connectionsString))
             {
@@ -151,6 +155,8 @@ namespace HabitTracker
             Console.Write("Enter the Id of the record you want to delete, or type 0 to return to the menu: ");
 
             string idInput = Console.ReadLine();
+
+            if (idInput == "0") return;
 
             using (var connection = new SqliteConnection(connectionsString))
             {
