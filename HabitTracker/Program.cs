@@ -35,10 +35,10 @@ namespace HabitTracker
                 connection.Close();
             }
 
-            GetUserInput();
+            RunApp();
         }
 
-        static void GetUserInput()
+        static void RunApp()
         {
 
             while (closeApp == false)
@@ -102,8 +102,10 @@ namespace HabitTracker
                     Console.WriteLine("Please enter a new record to replace the old one:");
 
                     string date = GetDateInput();
+                    if (date == null) { ShowError(); connection.Close(); return; }
 
                     string quantity = GetQuantityInput();
+                    if (quantity == null || quantity == "0") { ShowError(); connection.Close(); return; }
 
                     if (quantity == "0")
                     {
@@ -139,7 +141,6 @@ namespace HabitTracker
             Console.WriteLine("Press any key to return to the menu...");
             Console.ReadKey();
 
-            GetUserInput();
         }
 
         private static void DeleteRecord()
@@ -169,7 +170,6 @@ namespace HabitTracker
                 connection.Close();
             }
 
-            GetUserInput();
         }
 
         private static void GetRecords()
@@ -224,20 +224,16 @@ namespace HabitTracker
 
             Console.WriteLine("Press any key to return to the menu...");
             Console.ReadKey();
-            GetUserInput();
         }
 
         private static void InsertRecord()
         {
+
             string date = GetDateInput();
+            if (date == null) { ShowError(); return; }
 
             string quantity =  GetQuantityInput();
-
-            // don't open connection if user wants to return to menu
-            if (date == "0" || quantity == "0")
-            {
-                return;
-            }
+            if (quantity == null || quantity == "0") { ShowError(); return; }
 
             using (var connection = new SqliteConnection(connectionsString))
             {
@@ -259,7 +255,13 @@ namespace HabitTracker
                 connection.Close();
             }
 
-            GetUserInput();
+        }
+
+        private static void ShowError(string? message = null)
+        {
+            if(message is not null) Console.WriteLine(message);
+            Console.WriteLine("Press any key to return to the menu...");
+            Console.ReadKey();
         }
 
         private static string GetQuantityInput()
@@ -268,9 +270,22 @@ namespace HabitTracker
 
             string quantityInput = Console.ReadLine();
 
-            if (quantityInput == "0")
+            if(int.TryParse(quantityInput, out int quantityValue))
             {
-                GetUserInput();
+                if (quantityValue < 0)
+                {
+                    quantityInput = null;
+                    Console.WriteLine("Quantity cannot be negative.");
+                    Console.WriteLine("Press any key to return to the menu...");
+                    Console.ReadKey();
+                }
+            }
+            else
+            {
+                quantityInput = null;
+                Console.WriteLine("Invalid quantity. Please enter a valid number.");
+                Console.WriteLine("Press any key to return to the menu...");
+                Console.ReadKey();
             }
 
             return quantityInput;
@@ -285,10 +300,8 @@ namespace HabitTracker
 
             if (!parsedDate)
             {
+                dateInput = null;
                 Console.WriteLine("Invalid date format. Please use dd-mm-yyyy format.");
-                Console.WriteLine("Press any key to return to the menu...");
-                Console.ReadKey();
-                GetUserInput();
             }
 
             return dateInput;
