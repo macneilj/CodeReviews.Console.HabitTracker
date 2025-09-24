@@ -93,57 +93,55 @@ namespace HabitTracker
             using (var connection = new SqliteConnection(connectionsString))
             {
                 connection.Open();
-                var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = $"SELECT * FROM drinking_water WHERE Id = {idInput}";
-
-                List<DrinkingWater> tableData = new();
-
-                SqliteDataReader reader = tableCmd.ExecuteReader();
-
-                if (reader.HasRows)
+                
+                using (SqliteCommand command = new("SELECT * FROM drinking_water WHERE Id = @idInput", connection))
                 {
+                    command.Parameters.Add("@idInput", SqliteType.Integer).Value = idInput;
 
-                    Console.WriteLine("Please enter a new record to replace the old one:");
+                    SqliteDataReader reader = command.ExecuteReader();
 
-                    string date = GetDateInput();
-                    if (date == null) { ShowError(); connection.Close(); return; }
-
-                    string quantity = GetQuantityInput();
-                    if (quantity == null || quantity == "0") { ShowError(); connection.Close(); return; }
-
-                    if (quantity == "0")
+                    if (reader.HasRows)
                     {
-                        Console.WriteLine("quantity cannot be 0");
+                        List<DrinkingWater> tableData = new();
+
+                        Console.WriteLine("Please enter a new record to replace the old one:");
+
+                        string date = GetDateInput();
+                        if (date == null) { ReturnToMenu(); return; }
+
+                        string quantity = GetQuantityInput();
+                        if (quantity == null || quantity == "0") { ReturnToMenu(); return; }
+
+                        using (SqliteCommand updateCmd = new("UPDATE drinking_water SET date = @Date, quantity = @Quantity WHERE Id = @idInput", connection))
+                        {
+                            //updateCmd.CommandText = $"UPDATE drinking_water SET date = '{date}', quantity = '{quantity}' WHERE Id = {idInput}";
+
+                            updateCmd.Parameters.Add("@Date", SqliteType.Integer).Value = date;
+                            updateCmd.Parameters.Add("@Quantity", SqliteType.Integer).Value = quantity;
+                            updateCmd.Parameters.Add("@idInput", SqliteType.Integer).Value = idInput;
+
+                            if (updateCmd.ExecuteNonQuery() > 0)
+                            {
+                                Console.WriteLine("Record upddated successfully.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Failed to add record. Please try again.");
+                            }
+                        }
+
                     }
                     else
                     {
-                        var updateCmd = connection.CreateCommand();
+                        Console.WriteLine("No record found with the given Id.");
 
-                        updateCmd.CommandText = $"UPDATE drinking_water SET date = '{date}', quantity = '{quantity}' WHERE Id = {idInput}";
-
-                        if (updateCmd.ExecuteNonQuery() > 0)
-                        {
-                            Console.WriteLine("Record upddated successfully.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Failed to add record. Please try again.");
-                        }
                     }
 
                 }
-                else
-                {
-                    Console.WriteLine("No record found with the given Id.");
-
-                }
-
-                connection.Close();
 
             }
 
-            Console.WriteLine("Press any key to return to the menu...");
-            Console.ReadKey();
+            ReturnToMenu();
 
         }
 
@@ -161,25 +159,32 @@ namespace HabitTracker
             using (var connection = new SqliteConnection(connectionsString))
             {
                 connection.Open();
-                var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = $"DELETE FROM drinking_water WHERE Id = {idInput}";
 
-                int rowsAffected = tableCmd.ExecuteNonQuery();
-                if (rowsAffected > 0)
+                using (SqliteCommand command = new("DELETE FROM drinking_water WHERE Id = @idInput", connection))
                 {
-                    Console.WriteLine("Record deleted successfully.");
+                    //tableCmd.CommandText = $"DELETE FROM drinking_water WHERE Id = {idInput}";
+
+                    command.Parameters.Add("@idInput", SqliteType.Integer).Value = idInput;
+
+                    if (command.ExecuteNonQuery() > 0)
+                    {
+                        Console.WriteLine("Record deleted successfully.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("No record found with the given Id.");
+                    }
                 }
-                else
-                {
-                    Console.WriteLine("No record found with the given Id.");
-                }
-                connection.Close();
+                
             }
+
+            ReturnToMenu();
 
         }
 
         private static void GetRecords()
         {
+
             using (var connection = new SqliteConnection(connectionsString))
             {
                 connection.Open();
@@ -228,42 +233,47 @@ namespace HabitTracker
 
             GetRecords();
 
-            Console.WriteLine("Press any key to return to the menu...");
-            Console.ReadKey();
+            ReturnToMenu();
         }
 
         private static void InsertRecord()
         {
 
+            Console.Clear();
+
             string date = GetDateInput();
-            if (date == null) { ShowError(); return; }
+            if (date == null) { ReturnToMenu(); return; }
 
             string quantity =  GetQuantityInput();
-            if (quantity == null || quantity == "0") { ShowError(); return; }
+            if (quantity == null || quantity == "0") { ReturnToMenu(); return; }
 
             using (var connection = new SqliteConnection(connectionsString))
             {
                 connection.Open();
 
-                var tableCmd = connection.CreateCommand();
-
-                tableCmd.CommandText = $"INSERT INTO drinking_water(date, quantity) VALUES ('{date}', '{quantity}')";
-
-                if(tableCmd.ExecuteNonQuery() > 0)
+                using (SqliteCommand command = new("INSERT INTO drinking_water(date, quantity) VALUES (@Date, @Quantity)", connection))
                 {
-                    Console.WriteLine("Record added successfully.");
-                }
-                else
-                {
-                    Console.WriteLine("Failed to add record. Please try again.");
+
+                    command.Parameters.Add("@Date", SqliteType.Text).Value = date;
+                    command.Parameters.Add("@Quantity", SqliteType.Integer).Value = quantity;
+
+                    if (command.ExecuteNonQuery() > 0)
+                    {
+                        Console.WriteLine("Record added successfully.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to add record. Please try again.");
+                    }
                 }
 
-                connection.Close();
             }
+
+            ReturnToMenu();
 
         }
 
-        private static void ShowError(string? message = null)
+        private static void ReturnToMenu(string? message = null)
         {
             if(message is not null) Console.WriteLine(message);
             Console.WriteLine("Press any key to return to the menu...");
